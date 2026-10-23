@@ -13,13 +13,13 @@ XRift（React Three Fiber）ワールド向けの 3D 音源（空間オーディ
 デモや動作確認用に、シンプルな合成テスト音源（ピンクノイズ / サイン波 / キックとハットのループ）を同梱しています。
 
 - **core**（`xrift-spatial-audio`）: Web Audio API だけに依存（React / three.js 不要）
-  - `createSpeakerPanner()` / `setPannerPosition()` / `setListenerPose()` … パンナー（既定 equal-power、点音源なら HRTF も可）と、平滑化付きの位置・向き更新
+  - `createSpeakerPanner()` / `setPannerPosition()` / `setListenerPose()` … パンナー（既定 HRTF、多数の音源には軽い equal-power も可）と、平滑化付きの位置・向き更新。`warmUpHrtf()`（unlock 時に自動で HRTF データベースを先読み）
   - `createMuffle()` … 0..1 の量で駆動するローパス＋ゲイン（壁・ドア越しの遮蔽）
   - `createAudioUnlocker()` / `attachGestureUnlock()` … AudioContext の遅延生成と、ユーザー操作（pointer / key / touch / click / pointer lock / WebXR `sessionstart`）での resume
   - `volumeValue()` / `volumeStages()` / `applyVolumeStages()` / `createSoftCeiling()` … 出力段の補助（0–200 % の音量カーブ、クリップ防止）
   - `createTestSource(ctx, { type: 'pinkNoise' | 'sine' | 'drumLoop' })` … テスト音源（ピーク −1 dBFS、ループ再生）
 - **r3f**（`xrift-spatial-audio/r3f`）: React Three Fiber バインディング
-  - `<SpatialAudioProvider>` / `useSpatialAudio()`、`<SpatialAudioListener smoothing>`（カメラのワールド姿勢に追従）、`<Speaker position rotation offset panner onPanner destination>`（グループのワールド位置でパンナーを毎フレーム更新）、`updateListenerFromCamera()` / `updatePannerFromObject()`
+  - `<SpatialAudioProvider>` / `useSpatialAudio()`、`<SpatialAudioListener smoothing>`（実際に描画したカメラ＝XR 中は XR カメラのワールド姿勢に追従）、`<Speaker position rotation offset panner onPanner destination>`（グループのワールド位置でパンナーを毎フレーム更新）。どちらも描画直後（`addAfterEffect`）に姿勢を読むので、そのフレームに描かれた位置と音源位置が一致する、`updateListenerFromCamera()` / `updatePannerFromObject()`
 - **examples/PointSource.tsx** … 点音源 1 つ（遮蔽の ON/OFF 付き）の最小デモ
 
 ### インストール
@@ -51,12 +51,12 @@ function Source() {
     src.start()
     return () => src.stop()
   }, [ctx, panner])
-  return <Speaker position={[0, 0, -3]} offset={[0, 1.2, 0]} panner={{ panningModel: 'HRTF' }} onPanner={setPanner} />
+  return <Speaker position={[0, 0, -3]} offset={[0, 1.2, 0]} onPanner={setPanner} />
 }
 
 export const World = () => (
   <SpatialAudioProvider>
-    <SpatialAudioListener smoothing={0.03} />
+    <SpatialAudioListener />
     <Source />
   </SpatialAudioProvider>
 )
@@ -64,8 +64,9 @@ export const World = () => (
 遮蔽: 音源 → `createMuffle(ctx)` → パンナー の順に繋ぎ、`muffle.set(0..1)` で壁・ドアの量を渡します（examples/PointSource.tsx）。
 
 ### equal-power と HRTF
-- 既定は equal-power。Web Audio のパンナーは伝搬遅延を付けないので、同じ信号を複数のパンナーに送っても**ゲインが足されるだけ**でコムフィルタ（位相干渉）が起きません。HRTF は音源ごとに ITD / フィルタを掛けるため、同じ信号を複数スピーカーで鳴らすと音色が濁り、パンナー 1 個あたりの負荷も大きい（Meta Quest など）。
-- 独立した点音源には `panner={{ panningModel: 'HRTF' }}`（または `createSpeakerPanner(ctx, { panningModel: 'HRTF' })`）で HRTF を選べます。前後・上下の手掛かりが増えます。
+- 既定は HRTF。前後・上下の手掛かりがあり、点音源の方向がいちばん分かりやすい。最初の HRTF 使用時にブラウザがデータベースを読み込む（デスクトップで約 0.25 s）ので、unlock 時に `warmUpHrtf()` で先読みします（`createAudioUnlocker({ warmUpHrtf: false })` で無効化）。
+- 負荷（デスクトップ Chrome・Xeon 2.4 GHz・48 kHz での計測値。Quest では数倍になる見込み）: 動く音源は**どちらのモデルでも**パンナー 1 個あたり CPU 1 コアの約 1 %（位置が自動変化している間、Chrome がサンプルごとに方向・距離を計算し直すため）。HRTF の上乗せは 5–20 % 程度。静止音源は HRTF 約 0.1 %、equal-power 約 0.05 %。
+- 音源が非常に多いとき、または同じ信号を複数スピーカーで鳴らすとき（PA など）は `panner={{ panningModel: 'equalpower' }}`（または `createSpeakerPanner(ctx, { panningModel: 'equalpower' })`）。equal-power は軽く、Web Audio のパンナーは伝搬遅延を付けないので同じ信号を複数のパンナーに送っても**ゲインが足されるだけ**でコムフィルタが起きません（HRTF は音源ごとに ITD / フィルタが掛かり、合算すると音色が濁る）。
 
 ### ライセンス
 CC0 1.0 Universal（パブリックドメイン）。著作権を放棄しています。クレジット表記も不要で、自由に使用・改変・再配布できます。全文は LICENSE を参照してください。
@@ -80,14 +81,16 @@ the listener (camera / XR head), and can be occluded by walls and doors. For dem
 synthesized test source (pink noise, sine, or a kick + hat loop).
 
 - **core** (`xrift-spatial-audio`) — Web Audio only, no React / three.js:
-  `createSpeakerPanner()` (equal-power by default, HRTF for point sources), `setPannerPosition()`, `setListenerPose()` (smoothed),
+  `createSpeakerPanner()` (HRTF by default, equal-power as the lighter option), `warmUpHrtf()` (preloads the HRTF database; run automatically at unlock), `setPannerPosition()`, `setListenerPose()` (smoothed),
   `createMuffle()` (0..1 low-pass + gain for walls / doors), `createAudioUnlocker()` / `attachGestureUnlock()` (lazy
   AudioContext, resume on pointer / key / touch / click / pointer-lock / WebXR `sessionstart`), output helpers
   `volumeValue()` / `volumeStages()` / `applyVolumeStages()` / `createSoftCeiling()` (0–200 % volume curve, no clipping),
   `createTestSource(ctx, { type: 'pinkNoise' | 'sine' | 'drumLoop' })` (looping test programme peaking at −1 dBFS).
 - **r3f** (`xrift-spatial-audio/r3f`) — `<SpatialAudioProvider>` / `useSpatialAudio()`, `<SpatialAudioListener smoothing>`
-  (follows the camera's world pose), `<Speaker position rotation offset panner onPanner destination>` (drives a panner from
-  the group's world position every frame), `updateListenerFromCamera()` / `updatePannerFromObject()`.
+  (follows the world pose of the camera actually rendered with, i.e. the WebXR camera while presenting),
+  `<Speaker position rotation offset panner onPanner destination>` (drives a panner from the group's world position every
+  frame). Both sample poses right after the frame is rendered (`addAfterEffect`), so the sound is where the mesh was drawn
+  that frame. Also `useAfterRender()` / `renderedCamera()`, `updateListenerFromCamera()` / `updatePannerFromObject()`.
 - **examples/PointSource.tsx** — minimal demo: one point source with switchable occlusion.
 
 ### Install
@@ -112,10 +115,14 @@ connect your own source to the panner the same way. For occlusion, insert `creat
 panner and drive `muffle.set(0..1)` (see examples/PointSource.tsx).
 
 ### Equal-power vs HRTF
-- Equal-power is the default. Web Audio panners add no propagation delay, so feeding one signal to several equal-power
-  panners only sums gains — no comb filtering. HRTF applies per-source ITD / filtering, which colours the sum when the same
-  signal plays from several speakers, and costs more CPU (noticeable on Quest).
-- For independent point sources pass `{ panningModel: 'HRTF' }` for better front/back and elevation cues.
+- HRTF is the default: the best direction cues (front/back, elevation) for point sources. Browsers load the HRTF database on
+  first use (≈ 0.25 s on desktop), so the unlocker preloads it with `warmUpHrtf()` (`createAudioUnlocker({ warmUpHrtf: false })` to skip).
+- Cost, measured in desktop Chrome (Xeon 2.4 GHz, 48 kHz; expect several times more on Quest): a moving source costs ≈ 1 % of
+  one core per panner with **either** model (Chrome recomputes the geometry per sample while positions are automated); HRTF
+  adds only ≈ 5–20 % on top. Static sources: ≈ 0.1 % (HRTF) vs ≈ 0.05 % (equal-power) per panner.
+- For very many sources, or one signal on several speakers (a PA), pass `{ panningModel: 'equalpower' }`: it is lighter, and
+  since Web Audio panners add no propagation delay, equal-power panners of one signal only sum gains (no comb filtering),
+  while HRTF's per-source ITD / filtering colours the sum.
 
 ### License
 CC0 1.0 Universal (public domain dedication). No rights reserved, no attribution required. See LICENSE for the full text.

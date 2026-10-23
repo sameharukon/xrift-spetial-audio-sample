@@ -1,3 +1,5 @@
+import { warmUpHrtf } from './panner'
+
 /**
  * Lazy AudioContext + user-gesture unlock (browser autoplay policy).
  *
@@ -17,6 +19,8 @@ export interface AudioUnlocker {
 export interface AudioUnlockerOptions {
   latencyHint?: AudioContextLatencyCategory | number
   sampleRate?: number
+  /** load the HRTF database as soon as the context exists, so the first HRTF source does not stall (default true) */
+  warmUpHrtf?: boolean
   /** called once, synchronously, right after the context is created (build your graph here) */
   onCreate?: (ctx: AudioContext) => void
   /** called whenever the context reached the running state after an unlock */
@@ -36,6 +40,7 @@ export function createAudioUnlocker(o: AudioUnlockerOptions = {}): AudioUnlocker
       if (!ctx) {
         ctx = createAudioContext({ latencyHint: o.latencyHint ?? 'interactive', ...(o.sampleRate ? { sampleRate: o.sampleRate } : {}) })
         if (!ctx) return Promise.resolve(false)
+        if (o.warmUpHrtf !== false) warmUpHrtf(ctx)
         o.onCreate?.(ctx)
       }
       const c = ctx

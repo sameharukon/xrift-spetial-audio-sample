@@ -16,12 +16,12 @@ const ORBIT_PERIOD = 18 // s per lap
 /**
  * Room A — 3D positional audio. One source: a drum loop (broadband transients localise far better than a sine)
  * in a speaker that circles the room, so its direction and distance keep changing. Stand still and listen to it
- * move around you, or turn your head. One button switches the panner between equal-power (library default) and HRTF.
+ * move around you, or turn your head. One button switches the panner between HRTF (library default) and equal-power.
  */
 export function PositionalRoom({ bus }: { bus: RoomBus | null }) {
   const ctx = useSpatialAudio()?.context ?? null
   const [playing, setPlaying] = useState(true)
-  const [hrtf, setHrtf] = useState(false)
+  const [hrtf, setHrtf] = useState(true)
   const [input, setInput] = useState<AudioNode | null>(null)
   useTestSource(ctx, bus ? input : null, { type: 'drumLoop', bpm: 118, gain: 0.5 }, playing)
 

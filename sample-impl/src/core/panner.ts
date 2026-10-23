@@ -1,16 +1,22 @@
 /**
- * Equal-power speaker panners + listener / panner pose helpers (framework-agnostic: plain numbers, no three.js).
+ * Speaker panners + listener / panner pose helpers (framework-agnostic: plain numbers, no three.js).
  *
- * Why equal-power instead of HRTF: Web Audio panners apply no propagation delay, so feeding one signal to
- * several equal-power panners only sums gains (no comb filtering). HRTF adds per-source ITD/filtering that
- * colours the sum, and costs far more CPU — noticeable on standalone headsets (Quest).
+ * Default panning is HRTF: best direction cues (front/back, elevation) for point sources. Cost measured in desktop
+ * Chrome (Xeon 2.4 GHz, 48 kHz): a moving source costs ≈ 1 % of one core per panner with either model (Chrome
+ * recomputes the geometry per sample while positions are automated); HRTF adds only ≈ 5–20 % on top. Static
+ * sources: ≈ 0.1 % (HRTF) vs ≈ 0.05 % (equal-power) per panner. The first HRTF use loads a database (≈ 0.25 s),
+ * hence `warmUpHrtf()` at unlock.
+ *
+ * Choose 'equalpower' for many sources, or when one signal feeds several speakers (a PA): Web Audio panners add no
+ * propagation delay, so equal-power panners of one signal only sum gains (no comb filtering), while HRTF applies
+ * per-source ITD / filtering that colours the sum.
  */
 export interface SpeakerPannerOptions {
   distanceModel?: DistanceModelType
   refDistance?: number
   rolloffFactor?: number
   maxDistance?: number
-  /** 'equalpower' (default) or 'HRTF' (single point sources only; see the note above) */
+  /** 'HRTF' (default) or 'equalpower' (lighter; for many sources or one signal on several speakers, see above) */
   panningModel?: PanningModelType
 }
 
@@ -19,10 +25,10 @@ export const PANNER_DEFAULTS: Required<SpeakerPannerOptions> = {
   refDistance: 3,
   rolloffFactor: 0.7,
   maxDistance: 30,
-  panningModel: 'equalpower',
+  panningModel: 'HRTF',
 }
 
-/** mono-in panner with a gentle distance model (level stays even across a room) */
+/** mono-in panner (HRTF by default) with a gentle distance model (level stays even across a room) */
 export function createSpeakerPanner(ctx: BaseAudioContext, o: SpeakerPannerOptions = {}): PannerNode {
   const opt = { ...PANNER_DEFAULTS, ...o }
   const p = ctx.createPanner()
@@ -34,6 +40,21 @@ export function createSpeakerPanner(ctx: BaseAudioContext, o: SpeakerPannerOptio
   p.channelCount = 1
   p.channelCountMode = 'explicit'
   return p
+}
+
+/**
+ * Load the HRTF database now instead of on first use (browsers load it lazily, ≈ 0.25 s on desktop, which can stall
+ * the first HRTF source): a silent HRTF panner, connected through a zero gain for `holdMs`, then removed.
+ */
+export function warmUpHrtf(ctx: BaseAudioContext, holdMs = 1000) {
+  try {
+    const p = ctx.createPanner()
+    p.panningModel = 'HRTF'
+    const g = ctx.createGain()
+    g.gain.value = 0
+    p.connect(g).connect(ctx.destination)
+    setTimeout(() => { p.disconnect(); g.disconnect() }, holdMs)
+  } catch { /* closed context or no HRTF: nothing to warm */ }
 }
 
 export interface Vec3Like { x: number; y: number; z: number }

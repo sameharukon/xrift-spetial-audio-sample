@@ -1,7 +1,7 @@
-import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Group } from 'three'
 import { createSpeakerPanner, type SpeakerPannerOptions } from '../core/panner'
+import { useAfterRender } from './afterRender'
 import { useSpatialAudio } from './SpatialAudioProvider'
 import { updatePannerFromObject } from './three'
 
@@ -10,7 +10,7 @@ export interface SpeakerProps {
   rotation?: [number, number, number]
   /**
    * an existing panner (e.g. one shared by several sources) to drive. If omitted, the Speaker creates its own
-   * equal-power panner (options from `panner`), connects it to `destination` (default ctx.destination)
+   * panner (HRTF by default) (options from `panner`), connects it to `destination` (default ctx.destination)
    * and passes it to `onPanner` so you can connect a source to it.
    */
   node?: PannerNode | null
@@ -20,12 +20,17 @@ export interface SpeakerProps {
   onPanner?: (p: PannerNode | null) => void
   /** acoustic centre relative to the group (e.g. between sub and top) */
   offset?: [number, number, number]
+  /** smoothing time constant (s) of the panner moves (default 0.01) */
   smoothing?: number
   children?: ReactNode
 }
 
-/** a positioned group whose world position drives a PannerNode every frame (follows parents / animations) */
-export function Speaker({ position, rotation, node, panner, destination, onPanner, offset = [0, 0, 0], smoothing = 0.03, children }: SpeakerProps) {
+/**
+ * A positioned group whose world position drives a PannerNode every frame (follows parents / animations).
+ * The position is sampled after the frame was rendered, so it is exactly where the group was drawn this frame
+ * (independent of the order of useFrame callbacks that animate it).
+ */
+export function Speaker({ position, rotation, node, panner, destination, onPanner, offset = [0, 0, 0], smoothing = 0.01, children }: SpeakerProps) {
   const sa = useSpatialAudio()
   const ctx = sa?.context ?? null
   const ref = useRef<Group>(null)
@@ -46,13 +51,12 @@ export function Speaker({ position, rotation, node, panner, destination, onPanne
     }
   }, [node, ctx, pannerKey, destination])
   const placed = useRef<PannerNode | null>(null)
-  useFrame(() => {
+  useAfterRender(() => {
     const P = node ?? own
     const g = ref.current
     if (!P || !g) return
     const first = placed.current !== P
     placed.current = P
-    if (first) g.updateWorldMatrix(true, false)
     updatePannerFromObject(P, g, P.context.currentTime, offset, first ? 0 : smoothing)
   })
   return (

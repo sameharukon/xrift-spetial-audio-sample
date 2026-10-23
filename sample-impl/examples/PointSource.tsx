@@ -29,7 +29,7 @@ function PointSource({ occluded }: { occluded: boolean }) {
   }, [ctx, panner, muffle])
   useEffect(() => { muffle?.set(occluded ? 1 : 0) }, [muffle, occluded])
   return (
-    <Speaker position={[0, 0, -3]} offset={[0, 1.2, 0]} panner={{ panningModel: 'HRTF', refDistance: 1, rolloffFactor: 1.2 }} onPanner={setPanner}>
+    <Speaker position={[0, 0, -3]} offset={[0, 1.2, 0]} panner={{ refDistance: 1, rolloffFactor: 1.2 }} onPanner={setPanner}>
       <mesh position={[0, 0.6, 0]}>
         <boxGeometry args={[0.5, 1.2, 0.4]} />
         <meshStandardMaterial color="#333333" />
@@ -42,7 +42,7 @@ function PointSource({ occluded }: { occluded: boolean }) {
 export function PointSourceDemo({ occluded = false }: { occluded?: boolean }) {
   return (
     <SpatialAudioProvider>
-      <SpatialAudioListener smoothing={0.03} />
+      <SpatialAudioListener />
       <PointSource occluded={occluded} />
     </SpatialAudioProvider>
   )

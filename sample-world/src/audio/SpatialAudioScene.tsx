@@ -35,7 +35,7 @@ export function SpatialAudioScene({ volumePct, onVolume }: { volumePct: number; 
   const bus = (id: (typeof ROOMS)[number]['id']) => chain?.buses[id] ?? null
   return (
     <>
-      <SpatialAudioListener smoothing={0.03} />
+      <SpatialAudioListener />
       <VolumeRoom bus={bus('volume')} volumePct={volumePct} onVolume={onVolume} />
       <PositionalRoom bus={bus('positional')} />
       <OcclusionRoom bus={bus('occlusion')} />
