@@ -1,0 +1,36 @@
+{
+  "world": {
+    "distDir": "./dist",
+    "title": "Spatial Audio Sample",
+    "description": "空間オーディオ・フィルター・解析ライブラリ（xrift-spatial-audio）のサンプルワールド。PA スピーカー 2 台、扉越しのこもり、音量、フィルターパッド（LPF/HPF/リバーブ/エコー等）、スペクトラム表示。画面をクリックすると音が出ます。※ビートに合わせて控えめな点滅があります。",
+    "thumbnailPath": "thumbnail.png",
+    "buildCommand": "npm run build",
+    "ignore": [
+      "**/.DS_Store",
+      "**/Thumbs.db",
+      "**/*.js.map",
+      "**/.gitkeep",
+      "**/index.html",
+      "**/__federation_shared_@react-three/drei-*.js",
+      "**/__federation_shared_@react-three/fiber-*.js",
+      "**/__federation_shared_@react-three/rapier-*.js",
+      "**/__federation_shared_@xrift/world-components-*.js",
+      "**/__federation_shared_three-*.js",
+      "**/__federation_shared_three/addons/**",
+      "**/__federation_shared_react-*.js",
+      "**/__federation_shared_react-dom-*.js",
+      "**/__federation_shared_react-dom/client-*.js",
+      "**/__federation_shared_react/jsx-runtime-*.js",
+      "**/rapier.es-*.js",
+      "**/hls-*.js"
+    ],
+    "physics": {
+      "gravity": 9.81,
+      "allowInfiniteJump": false
+    },
+    "camera": {
+      "near": 0.1,
+      "far": 1000
+    }
+  }
+}

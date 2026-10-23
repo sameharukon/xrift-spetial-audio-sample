@@ -1,0 +1,15 @@
+{
+  "name": "xrift-spatial-audio-handoff",
+  "private": true,
+  "license": "CC0-1.0",
+  "workspaces": [
+    "sample-impl",
+    "sample-world"
+  ],
+  "scripts": {
+    "build": "npm run build -w sample-impl && npm run build -w sample-world",
+    "typecheck": "npm run build -w sample-impl && npm run typecheck -w sample-impl && npm run typecheck -w sample-world",
+    "dev": "npm run build -w sample-impl && npm run dev -w sample-world",
+    "check": "cd sample-world && xrift check world"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "name": "xrift-spatial-audio",
+  "version": "0.1.0",
+  "description": "Club-style spatial audio / PA layer for XRift worlds (Web Audio core + React Three Fiber bindings)",
+  "type": "module",
+  "license": "CC0-1.0",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./r3f": {
+      "types": "./dist/r3f.d.ts",
+      "import": "./dist/r3f.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run build"
+  },
+  "peerDependencies": {
+    "@react-three/fiber": ">=9",
+    "react": ">=19",
+    "three": ">=0.176.0"
+  },
+  "peerDependenciesMeta": {
+    "@react-three/fiber": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "three": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@react-three/fiber": "^9.5.0",
+    "@types/react": "^19.2.14",
+    "@types/three": "^0.183.1",
+    "react": "~19.2.4",
+    "three": "^0.183.1",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.2"
+  }
+}
