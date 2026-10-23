@@ -63,7 +63,7 @@ export const World = () => (
 ```
 遮蔽: 音源 → `createMuffle(ctx)` → パンナー の順に繋ぎ、`muffle.set(0..1)` で壁・ドアの量を渡します（examples/PointSource.tsx）。
 
-### equal-power と HRTF
+### HRTF（既定）と equal-power
 - 既定は HRTF。前後・上下の手掛かりがあり、点音源の方向がいちばん分かりやすい。最初の HRTF 使用時にブラウザがデータベースを読み込む（デスクトップで約 0.25 s）ので、unlock 時に `warmUpHrtf()` で先読みします（`createAudioUnlocker({ warmUpHrtf: false })` で無効化）。
 - 負荷（デスクトップ Chrome・Xeon 2.4 GHz・48 kHz での計測値。Quest では数倍になる見込み）: 動く音源は**どちらのモデルでも**パンナー 1 個あたり CPU 1 コアの約 1 %（位置が自動変化している間、Chrome がサンプルごとに方向・距離を計算し直すため）。HRTF の上乗せは 5–20 % 程度。静止音源は HRTF 約 0.1 %、equal-power 約 0.05 %。
 - 音源が非常に多いとき、または同じ信号を複数スピーカーで鳴らすとき（PA など）は `panner={{ panningModel: 'equalpower' }}`（または `createSpeakerPanner(ctx, { panningModel: 'equalpower' })`）。equal-power は軽く、Web Audio のパンナーは伝搬遅延を付けないので同じ信号を複数のパンナーに送っても**ゲインが足されるだけ**でコムフィルタが起きません（HRTF は音源ごとに ITD / フィルタが掛かり、合算すると音色が濁る）。
@@ -114,7 +114,7 @@ See the TSX example above (`SpatialAudioProvider` + `SpatialAudioListener` + `Sp
 connect your own source to the panner the same way. For occlusion, insert `createMuffle(ctx)` between the source and the
 panner and drive `muffle.set(0..1)` (see examples/PointSource.tsx).
 
-### Equal-power vs HRTF
+### HRTF (default) vs equal-power
 - HRTF is the default: the best direction cues (front/back, elevation) for point sources. Browsers load the HRTF database on
   first use (≈ 0.25 s on desktop), so the unlocker preloads it with `warmUpHrtf()` (`createAudioUnlocker({ warmUpHrtf: false })` to skip).
 - Cost, measured in desktop Chrome (Xeon 2.4 GHz, 48 kHz; expect several times more on Quest): a moving source costs ≈ 1 % of

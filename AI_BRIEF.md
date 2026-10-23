@@ -19,7 +19,7 @@ XRift のワールド作者が、3D 音源（オブジェクトに付けた音�
 | `src/core/muffle.ts` | `createMuffle`: 0..1 で LPF とゲインを動かす（壁・ドア越し） |
 | `src/core/volume.ts` | 出力段の補助: `volumeStages` / `applyVolumeStages`（0–100 % は 3 乗カーブ、100–200 % はリミッター手前でブースト）、`createSoftCeiling` |
 | `src/core/testSource.ts` | `createTestSource`: pinkNoise / sine / drumLoop。ピーク −1 dBFS |
-| `src/r3f/*` | `<SpatialAudioProvider>`, `useSpatialAudio()`, `<SpatialAudioListener>`（描画に使われたカメラのワールド姿勢に追従。VR では XR カメラ）, `<Speaker position rotation offset node panner onPanner destination>`（グループのワールド位置でパンナーを毎フレーム更新）。どちらも描画後（after-effect）に読むので、その後に動くカメラ・物体ともずれない, `updateListenerFromCamera`, `updatePannerFromObject` |
+| `src/r3f/*` | `<SpatialAudioProvider>`, `useSpatialAudio()`, `<SpatialAudioListener>`（描画に使われたカメラのワールド姿勢に追従。VR では XR カメラ）, `<Speaker position rotation offset node panner onPanner destination>`（グループのワールド位置でパンナーを毎フレーム更新）, `updateListenerFromCamera`, `updatePannerFromObject`。listener とスピーカーは描画後（after-effect）に読むので、描画直前に動いたカメラ・物体ともずれない |
 
 ## 提案する正式 API（既存パターンに合わせる）
 - `SpatialAudioContext` / `SpatialAudioProvider` / `useSpatialAudioContext()` / `createDefaultSpatialAudioImplementation()` を追加し、`XRiftProvider` に `spatialAudioImplementation` を足す。
