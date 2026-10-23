@@ -2,10 +2,9 @@ import { SpawnPoint } from '@xrift/world-components'
 import { useThree } from '@react-three/fiber'
 import { useEffect, useState } from 'react'
 import { Color } from 'three'
-import { SpatialAudioProvider, useSpatialAudio } from 'xrift-spatial-audio/r3f'
+import { SpatialAudioProvider } from 'xrift-spatial-audio/r3f'
 import { SpatialAudioScene } from './audio/SpatialAudioScene'
 import { Architecture } from './components/Architecture'
-import { HubStand } from './components/HubStand'
 import { SPAWN } from './constants'
 
 export interface WorldProps {
@@ -14,9 +13,11 @@ export interface WorldProps {
 }
 
 /**
- * Spatial audio sample: a hub (volume + audio-state lamp; its west and south walls are closed) with one room per topic (see constants.ts):
- *   north  A  3D positional audio / panning (point sources, a moving source, equal-power ↔ HRTF)
- *   east   B  occlusion (`createMuffle`): a speaker behind a partition with a pocket door
+ * Spatial audio sample: one straight walk from west to east, no branching (see constants.ts):
+ *   V  set the volume against a reference speaker (volume panel + audio-state lamp)
+ *   A  3D positional audio (one drum-loop source circling the room, equal-power ↔ HRTF)
+ *   B  occlusion (`createMuffle`): a speaker behind a partition with a pocket door
+ * Each corridor is lit (bands over its doorways, a floor strip) in the colour of the room it leads to.
  * Each room has its own bus, gated / muffled by where the listener is, so rooms do not bleed into each other.
  * Audio starts on the first click / key / touch / pointer lock / XR session start; it is local to each visitor.
  */
@@ -30,8 +31,7 @@ export const World: React.FC<WorldProps> = ({ position = [0, 0, 0], scale = 1 })
       <directionalLight position={[4, 10, 6]} intensity={0.9} />
       <Architecture />
       <SpatialAudioProvider>
-        <SpatialAudioScene volumePct={volumePct} />
-        <Stand volumePct={volumePct} onVolume={setVolumePct} />
+        <SpatialAudioScene volumePct={volumePct} onVolume={setVolumePct} />
       </SpatialAudioProvider>
       <SpawnPoint position={SPAWN.position} yaw={SPAWN.yaw} />
     </group>
@@ -47,9 +47,4 @@ function SceneBackground({ color }: { color: string }) {
     return () => { scene.background = prev }
   }, [scene, color])
   return null
-}
-
-function Stand(p: { volumePct: number; onVolume: (v: number) => void }) {
-  const running = useSpatialAudio()?.running ?? false
-  return <HubStand position={[-2.4, 0, 0.4]} rotation={0.6} running={running} {...p} />
 }

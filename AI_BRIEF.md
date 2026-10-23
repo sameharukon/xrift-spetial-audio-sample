@@ -28,7 +28,7 @@ XRift のワールド作者が、3D 音源（オブジェクトに付けた音�
 - 動画の `useWebAudioVolume` も将来は同じ context に乗せる（任意）。
 
 ## 設計判断（理由）
-- **equal-power が既定。** Web Audio のパンナーは遅延を付けないので、同じ信号を複数スピーカーに送ってもコムフィルタが出ない。HRTF は合算すると音色が濁り、Quest では負荷も大きい。独立した点音源なら `panningModel:'HRTF'` を選べる（サンプルの A 室で切替可能）。
+- **equal-power が既定。** Web Audio のパンナーは遅延を付けないので、同じ信号を複数スピーカーに送ってもコムフィルタが出ない。HRTF は合算すると音色が濁り、Quest では負荷も大きい。独立した点音源なら `panningModel:'HRTF'` を選べる（サンプルの A 室は周回する drumLoop 音源 1 つで、equal-power ⇔ HRTF を切り替えて聴き比べられる）。
 - **遮蔽はパンナーの手前の muffle。** 音源 → `createMuffle` → パンナー。量（0..1）は呼び出し側が壁・ドアの状態と見通しから計算する（サンプル B 室の `partitionOcclusion`）。
 - **unlock。** AudioContext は最初のジェスチャーまで作らない。XR では `renderer.xr` の `sessionstart` でも resume する（XR 内ではクリックが来ないことがある）。
 - **ブーストはリミッターの手前。** 100 % を超える音量はリミッター入力側のゲインで上げ、ピークをリミッターで抑える。最後に soft ceiling を置き、−0.1 dBFS を超えないようにする。
@@ -44,11 +44,11 @@ npm install && npm run build   # ルート: workspaces。sample-impl → sample-
 npm run dev                    # 画面クリックで音が出る
 npm run check                  # xrift check world
 ```
-操作方法は `sample-world/README.md` を参照（ハブ + 2 部屋: 3D 定位 / 遮蔽。ハブに音量スタンド）。
+操作方法は `sample-world/README.md` を参照（一本道で 3 部屋: 音量調整 → 3D 定位 → 遮蔽。各部屋の入口すぐ左に操作盤）。
 
 ## 受け入れ基準（プロトタイプで計測済みの値）
 - ジェスチャー前は AudioContext 0 個。クリック後に 1 個で running になる。listener の位置と向きがカメラ（ワールド姿勢。親が回転していても正しい）に一致する。
-- 振り向くと左右が入れ替わる（ビーコン 523 Hz: L−R −21 dB → 180° 回すと +23 dB）。ドアを閉めると廊下で −6.6 dB。音量 50 % で −18 dB、200 % で +6 dB、0 % で無音。
+- 振り向くと左右が入れ替わる（523 Hz の試験サインで計測: L−R −21 dB → 180° 回すと +23 dB）。ドアを閉めると廊下で −6.6 dB。音量 50 % で −18 dB、200 % で +6 dB、0 % で無音。
 - StrictMode でエラーが出ない。`xrift check world` が APPROVE。
 
 ## ライセンス

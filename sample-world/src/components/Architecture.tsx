@@ -73,6 +73,12 @@ export function Architecture() {
           <meshStandardMaterial color={b.color} emissive={b.color} emissiveIntensity={0.6} />
         </mesh>
       ))}
+      {L.strips.map((b, i) => (
+        <mesh key={`s${i}`} position={b.position}>
+          <boxGeometry args={b.size} />
+          <meshBasicMaterial color={b.color} />
+        </mesh>
+      ))}
       <Colliders solids={L.colliders} bounds={bounds} />
     </group>
   )

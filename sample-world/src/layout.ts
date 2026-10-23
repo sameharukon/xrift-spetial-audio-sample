@@ -1,4 +1,6 @@
-import { CORRIDOR_HALF, DOORWAY, HUB, HUB_COLORS, PARTITION, ROOMS, WALL, type Rect, type Side } from './constants'
+import { CORRIDORS, CORRIDOR_HALF, DOORWAY, PARTITION, ROOMS, ROOM_BY_ID, WALL, type Rect } from './constants'
+
+type Side = 'n' | 's' | 'e' | 'w'
 
 /**
  * Pure geometry for the architecture (no React / three): wall runs, floor / ceiling slabs, the walkable
@@ -43,90 +45,69 @@ function rectWalls(r: Rect, color: string, doors: Partial<Record<Side, number>>)
   })
 }
 
-const opposite: Record<Side, Side> = { n: 's', s: 'n', e: 'w', w: 'e' }
-
 export function buildLayout() {
   const walls: WallRun[] = []
   const floors: Slab[] = []
   const ceilings: Slab[] = []
   const bands: Band[] = []
+  const strips: Band[] = []
   const walk: Rect[] = []
   const lights: { position: [number, number, number]; size: [number, number]; color: string }[] = []
 
   const shrink = (r: Rect, d: number): Rect => ({ x0: r.x0 + d, x1: r.x1 - d, z0: r.z0 + d, z1: r.z1 - d })
   const grow = (r: Rect, d: number) => shrink(r, -d)
-  /** walkable gap through a wall run at a doorway */
-  const doorGap = (axis: 'x' | 'z', c: number, lo: number, hi: number, t: number): Rect =>
-    axis === 'x' ? { x0: lo, x1: hi, z0: c - t / 2, z1: c + t / 2 } : { x0: c - t / 2, x1: c + t / 2, z0: lo, z1: hi }
-  /** coloured band above a doorway on both faces of the wall (1 cm buried, 3 cm proud) */
-  const doorBands = (axis: 'x' | 'z', c: number, mid: number, t: number, color: string) => {
+  /** walkable gap through a z-axis wall run (at x = c) for the doorway on z = 0 */
+  const doorGap = (c: number, t: number): Rect => ({ x0: c - t / 2, x1: c + t / 2, z0: -DOORWAY.width / 2, z1: DOORWAY.width / 2 })
+  /** glowing band above a doorway on both faces of a z-axis wall (1 cm buried, 3 cm proud) */
+  const doorBands = (c: number, t: number, color: string) => {
     const w = DOORWAY.width + 0.5, bh = 0.14, y = DOORWAY.height + 0.22
-    for (const sgn of [-1, 1]) {
-      const off = c + sgn * (t / 2 + 0.01)
-      bands.push(axis === 'x'
-        ? { position: [mid, y, off], size: [w, bh, 0.04], color }
-        : { position: [off, y, mid], size: [0.04, bh, w], color })
-    }
+    for (const sgn of [-1, 1]) bands.push({ position: [c + sgn * (t / 2 + 0.01), y, 0], size: [0.04, bh, w], color })
   }
 
-  // hub: a doorway in every wall
-  const hubDoors: Partial<Record<Side, number>> = {}
-  for (const room of ROOMS) hubDoors[opposite[room.door]] = 0
-  walls.push(...rectWalls(HUB, HUB_COLORS.wall, hubDoors))
-  floors.push({ rect: HUB, color: HUB_COLORS.floor })
-  ceilings.push({ rect: grow(HUB, h), color: HUB_COLORS.ceiling })
-  walk.push(shrink(HUB, h))
-  lights.push({ position: [0, WALL.height, 0], size: [3, 3], color: HUB_COLORS.light })
-
-  for (const room of ROOMS) {
-    const { rect, corridor: cor, colors } = room
-    const hubSide = opposite[room.door]
-    const axis = sideAxis(room.door)
-    const mid = axis === 'x' ? (cor.x0 + cor.x1) / 2 : (cor.z0 + cor.z1) / 2
-    // room
-    walls.push(...rectWalls(rect, colors.wall, { [room.door]: mid }))
+  // rooms: west / east doorways on z = 0 where a corridor joins (first room: east only, last room: west only)
+  ROOMS.forEach((room, i) => {
+    const { rect, colors } = room
+    const doors: Partial<Record<Side, number>> = {}
+    if (i > 0) doors.w = 0
+    if (i < ROOMS.length - 1) doors.e = 0
+    walls.push(...rectWalls(rect, colors.wall, doors))
     floors.push({ rect, color: colors.floor })
     ceilings.push({ rect: grow(rect, h), color: colors.ceiling })
-    const interiorIdx = walk.push(shrink(rect, h)) - 1
-    const rc = sideCoord(rect, room.door)
-    const hc = sideCoord(HUB, hubSide)
-    walk.push(doorGap(axis, rc, mid - DOORWAY.width / 2, mid + DOORWAY.width / 2, WALL.t))
-    walk.push(doorGap(axis, hc, mid - DOORWAY.width / 2, mid + DOORWAY.width / 2, WALL.t))
-    doorBands(axis, rc, mid, WALL.t, colors.accent)
-    doorBands(axis, hc, mid, WALL.t, colors.accent)
-    // corridor: two side walls perpendicular to the doorway walls, buried BURY into them at both ends
-    const lo = Math.min(rc, hc) + h - BURY, hi = Math.max(rc, hc) - h + BURY
-    const corAxis = axis === 'x' ? 'z' : 'x'
-    for (const s of [-1, 1]) walls.push({ axis: corAxis, c: mid + s * CORRIDOR_HALF, a0: lo, a1: hi, t: WALL.t, openings: [], color: colors.corridor })
-    floors.push({ rect: cor, color: colors.corridor })
-    const inner = CORRIDOR_HALF - h, outer = CORRIDOR_HALF + h
-    const a0 = Math.min(rc, hc) + h, a1 = Math.max(rc, hc) - h
-    if (corAxis === 'z') {
-      ceilings.push({ rect: { x0: mid - outer, x1: mid + outer, z0: a0, z1: a1 }, color: colors.ceiling })
-      walk.push({ x0: mid - inner, x1: mid + inner, z0: a0, z1: a1 })
-      lights.push({ position: [mid, WALL.height, (a0 + a1) / 2], size: [0.5, 2], color: colors.light })
-    } else {
-      ceilings.push({ rect: { x0: a0, x1: a1, z0: mid - outer, z1: mid + outer }, color: colors.ceiling })
-      walk.push({ x0: a0, x1: a1, z0: mid - inner, z1: mid + inner })
-      lights.push({ position: [(a0 + a1) / 2, WALL.height, mid], size: [2, 0.5], color: colors.light })
-    }
-    // ceiling light panels
     const [cx, cz] = [(rect.x0 + rect.x1) / 2, (rect.z0 + rect.z1) / 2]
     const w = rect.x1 - rect.x0, d = rect.z1 - rect.z0
     for (const [fx, fz] of [[-0.25, -0.25], [0.25, -0.25], [-0.25, 0.25], [0.25, 0.25]]) {
-      lights.push({ position: [cx + fx * w, WALL.height, cz + fz * d], size: [1.2, 1.2], color: colors.light })
+      lights.push({ position: [cx + fx * w, WALL.height, cz + fz * d], size: [w > 10 ? 1.2 : 0.9, w > 10 ? 1.2 : 0.9], color: colors.light })
     }
-
     if (room.id === 'occlusion') {
-      // partition with a pocket door: the walkable interior is split in two halves + the door gap
+      // partition with a pocket door: the walkable interior is two halves + the door gap
       walls.push({ axis: 'z', c: PARTITION.x, a0: rect.z0 + h - BURY, a1: rect.z1 - h + BURY, t: PARTITION.t, openings: [[-DOORWAY.width / 2, DOORWAY.width / 2]], color: '#7d5638' })
-      const inside = walk.splice(interiorIdx, 1)[0] // replace the whole interior
+      const inside = shrink(rect, h)
       walk.push({ ...inside, x1: PARTITION.x - PARTITION.t / 2 }, { ...inside, x0: PARTITION.x + PARTITION.t / 2 })
-      walk.push(doorGap('z', PARTITION.x, -DOORWAY.width / 2, DOORWAY.width / 2, PARTITION.t))
-      doorBands('z', PARTITION.x, 0, PARTITION.t, colors.accent)
+      walk.push(doorGap(PARTITION.x, PARTITION.t))
+      doorBands(PARTITION.x, PARTITION.t, colors.accent)
+    } else {
+      walk.push(shrink(rect, h))
     }
+  })
+
+  // corridors: two side walls along x, buried BURY into the doorway walls at both ends.
+  // The way on is lit in the colour of the room it leads to: the bands over both doorways and a floor strip.
+  for (const cor of CORRIDORS) {
+    const { rect: r } = cor
+    const from = ROOM_BY_ID[cor.from], to = ROOM_BY_ID[cor.to]
+    for (const s of [-1, 1]) walls.push({ axis: 'x', c: s * CORRIDOR_HALF, a0: r.x0 + h - BURY, a1: r.x1 - h + BURY, t: WALL.t, openings: [], color: from.colors.corridor })
+    floors.push({ rect: r, color: from.colors.corridor })
+    const a0 = r.x0 + h, a1 = r.x1 - h, inner = CORRIDOR_HALF - h, outer = CORRIDOR_HALF + h
+    ceilings.push({ rect: { x0: a0, x1: a1, z0: -outer, z1: outer }, color: from.colors.ceiling })
+    walk.push({ x0: a0, x1: a1, z0: -inner, z1: inner })
+    walk.push(doorGap(r.x0, WALL.t), doorGap(r.x1, WALL.t))
+    lights.push({ position: [(a0 + a1) / 2, WALL.height, 0], size: [2, 0.5], color: to.colors.light })
+    doorBands(r.x0, WALL.t, to.colors.accent)
+    doorBands(r.x1, WALL.t, to.colors.accent)
+    // floor strip (1 cm buried, 1 cm proud), from 1.2 m inside the previous room to the next room's threshold
+    strips.push({ position: [(r.x0 - 1.2 + r.x1) / 2, 0, 0], size: [r.x1 - r.x0 + 1.2, 0.02, 0.12], color: to.colors.accent })
   }
-  return { walls, floors, ceilings, bands, walk, lights, colliders: solidBoxes(walk, 5) }
+  return { walls, floors, ceilings, bands, strips, walk, lights, colliders: solidBoxes(walk, 5) }
 }
 
 /**

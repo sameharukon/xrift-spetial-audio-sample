@@ -26,30 +26,6 @@ export function SpeakerCabinet() {
   )
 }
 
-/** small monitor on a pole (acoustic centre at y ≈ 1.25), front facing +z, coloured trim */
-export function MiniSpeaker({ color, lit = true }: { color: string; lit?: boolean }) {
-  return (
-    <group>
-      <mesh position={[0, 0.45, 0]}>
-        <cylinderGeometry args={[0.04, 0.04, 0.9, 10]} />
-        <meshStandardMaterial color="#3a3a3a" />
-      </mesh>
-      <mesh position={[0, 1.25, 0]}>
-        <boxGeometry args={[0.42, 0.62, 0.36]} />
-        <meshStandardMaterial color={COLORS.cabinet} roughness={0.8} />
-      </mesh>
-      <mesh position={[0, 1.15, 0.185]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.13, 0.13, 0.02, 24]} />
-        <meshStandardMaterial color={COLORS.cone} />
-      </mesh>
-      <mesh position={[0, 1.45, 0.185]}>
-        <boxGeometry args={[0.3, 0.06, 0.02]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={lit ? 1.0 : 0.05} />
-      </mesh>
-    </group>
-  )
-}
-
 /** omnidirectional column speaker (acoustic centre at y ≈ 1.25): pole, drum-shaped body, grille rings */
 export function OmniSpeaker({ color, lit = true }: { color: string; lit?: boolean }) {
   return (

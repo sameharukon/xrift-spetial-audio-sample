@@ -2,8 +2,8 @@ import { VOLUME_STEPS } from '../audio/volume'
 import { COLORS } from '../constants'
 import { Button, GlyphBar } from './Controls'
 
-/** hub: volume − / +, a level bar (0–200 %, tick at 100 %) and the audio-state lamp (red = locked, green = running) */
-export function HubStand({ position, rotation = 0, volumePct, onVolume, running }: { position: [number, number, number]; rotation?: number; volumePct: number; onVolume: (v: number) => void; running: boolean }) {
+/** room V: volume − / +, a level bar (0–200 %, tick at 100 %) and the audio-state lamp (red = locked, green = running) */
+export function VolumeStand({ position, rotation = 0, volumePct, onVolume, running }: { position: [number, number, number]; rotation?: number; volumePct: number; onVolume: (v: number) => void; running: boolean }) {
   const idx = VOLUME_STEPS.indexOf(volumePct as (typeof VOLUME_STEPS)[number])
   const step = (d: number) => onVolume(VOLUME_STEPS[Math.min(VOLUME_STEPS.length - 1, Math.max(0, idx + d))])
   const barW = 1.0

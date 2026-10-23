@@ -6,10 +6,10 @@ import { Speaker, useSpatialAudio } from 'xrift-spatial-audio/r3f'
 import type { RoomBus } from '../audio/chain'
 import { partitionOcclusion } from '../audio/roomMix'
 import { useTestSource } from '../audio/useTestSource'
-import { ButtonStand, GlyphDot } from '../components/Controls'
+import { ButtonStand, GlyphBar, GlyphDot } from '../components/Controls'
 import { PocketDoor } from '../components/PocketDoor'
 import { SpeakerCabinet } from '../components/SpeakerCabinet'
-import { OCCLUDED_SPEAKER, PARTITION, ROOM_BY_ID } from '../constants'
+import { OCCLUDED_SPEAKER, PANELS, PANEL_YAW, PARTITION, ROOM_BY_ID } from '../constants'
 
 const room = ROOM_BY_ID.occlusion
 const _p = new Vector3()
@@ -20,6 +20,8 @@ const METER_H = 1.6
  * door; a drum loop plays on the far side. On the near side the speaker goes through a muffle stage driven
  * by `partitionOcclusion()` (door closed → low-pass ≈ 220 Hz and −8 dB; door open → depends on whether
  * the doorway is in the line of sight). The meter on the partition shows the current amount (tall = clear).
+ * The panel just inside the entrance plays / stops the drum and opens / closes the door, and stands where the
+ * line to the speaker runs through the doorway, so the before / after is heard without moving.
  */
 export function OcclusionRoom({ bus }: { bus: RoomBus | null }) {
   const ctx = useSpatialAudio()?.context ?? null
@@ -75,10 +77,11 @@ export function OcclusionRoom({ bus }: { bus: RoomBus | null }) {
       <FoamPanel x={nearFace} z={-4} />
       <FoamPanel x={nearFace} z={4.4} />
       <ButtonStand
-        position={[13.2, 0, -2.6]}
-        rotation={-Math.PI / 2}
+        position={PANELS.occlusion}
+        rotation={PANEL_YAW}
         buttons={[
           { id: 'sample-b-play', text: playing ? '壁の向こうのドラムを止める' : '壁の向こうのドラムを鳴らす', color: room.colors.accent, on: playing, onPress: () => setPlaying((v) => !v), glyph: <GlyphDot r={0.04} /> },
+          { id: 'sample-b-door-panel', text: doorOpen ? '扉を閉める' : '扉を開ける', color: '#a1887f', on: doorOpen, onPress: () => setDoorOpen((o) => !o), glyph: doorOpen ? <><GlyphBar x={-0.06} w={0.02} h={0.13} /><GlyphBar x={0.06} w={0.02} h={0.13} /></> : <GlyphBar w={0.02} h={0.13} /> },
         ]}
       />
     </group>

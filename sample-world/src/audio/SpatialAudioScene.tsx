@@ -5,6 +5,7 @@ import { SpatialAudioListener, useSpatialAudio } from 'xrift-spatial-audio/r3f'
 import { ROOMS } from '../constants'
 import { OcclusionRoom } from '../rooms/OcclusionRoom'
 import { PositionalRoom } from '../rooms/PositionalRoom'
+import { VolumeRoom } from '../rooms/VolumeRoom'
 import { applyVolume, useOutputChain } from './chain'
 import { roomMix } from './roomMix'
 
@@ -12,9 +13,9 @@ const _p = new Vector3()
 
 /**
  * The whole audio side: one output chain (per-room buses → boost → limiter → volume → soft ceiling) and the
- * two rooms. Visuals render before the first gesture; sources start once the AudioContext exists.
+ * three rooms in walking order (volume → positioning → occlusion). Visuals render before the first gesture; sources start once the AudioContext exists.
  */
-export function SpatialAudioScene({ volumePct }: { volumePct: number }) {
+export function SpatialAudioScene({ volumePct, onVolume }: { volumePct: number; onVolume: (v: number) => void }) {
   const ctx = useSpatialAudio()?.context ?? null
   const chain = useOutputChain(ctx)
   const camera = useThree((s) => s.camera)
@@ -35,6 +36,7 @@ export function SpatialAudioScene({ volumePct }: { volumePct: number }) {
   return (
     <>
       <SpatialAudioListener smoothing={0.03} />
+      <VolumeRoom bus={bus('volume')} volumePct={volumePct} onVolume={onVolume} />
       <PositionalRoom bus={bus('positional')} />
       <OcclusionRoom bus={bus('occlusion')} />
     </>

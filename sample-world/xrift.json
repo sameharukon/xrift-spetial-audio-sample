@@ -2,7 +2,7 @@
   "world": {
     "distDir": "./dist",
     "title": "Spatial Audio Sample",
-    "description": "3D 音源ライブラリ（xrift-spatial-audio）のサンプルワールド。ハブから 2 部屋に分かれています: 3D 定位（周回する音源、HRTF / equal-power 切替）/ 壁とドア越しの遮蔽。画面をクリックすると音が出ます。",
+    "description": "3D 音源ライブラリ（xrift-spatial-audio）のサンプルワールド。一本道で 3 部屋を順に進みます: 音量調整（基準スピーカーを聞きながら）→ 3D 定位（部屋を周回するドラム音源 1 つ、HRTF / equal-power 切替）→ 壁とドア越しの遮蔽。画面をクリックすると音が出ます。",
     "thumbnailPath": "thumbnail.png",
     "buildCommand": "npm run build",
     "ignore": [

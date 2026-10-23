@@ -10,7 +10,7 @@ XRift ワールド用の 3D 音源（空間オーディオ）ライブラリ（�
   - 3D 定位（オブジェクトに付けた音源、聞き手の追従、equal-power / HRTF）
   - 遮蔽
   - 音量
-- `sample-world/` は動作確認用の XRift ワールドです。画面をクリックすると音が出ます。
+- `sample-world/` は動作確認用の XRift ワールドです。一本道で 音量調整 → 3D 定位 → 遮蔽 の順に 3 部屋を進みます。画面をクリックすると音が出ます。
 - `AI_BRIEF.md` は正式実装を担当する AI 向けの説明です。
 
 ```bash
@@ -27,7 +27,7 @@ This repo holds a prototype 3D (spatial) audio library for XRift worlds, plus a 
   - 3D positioning (sources attached to objects, listener tracking, equal-power / HRTF)
   - occlusion
   - volume
-- `sample-world/` is a minimal XRift world for trying the library. Click to start the audio.
+- `sample-world/` is a minimal XRift world for trying the library: one straight walk through three rooms, volume → 3D positioning → occlusion. Click to start the audio.
 - `AI_BRIEF.md` is a short brief (in Japanese) for whoever implements the official version.
 
 Run `npm install && npm run build` at the root, then `npm run dev`.
