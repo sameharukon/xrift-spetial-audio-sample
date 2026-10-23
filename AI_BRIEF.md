@@ -70,7 +70,7 @@ npm install && npm run build   # ルート: workspaces。sample-impl → sample-
 npm run dev                    # 画面クリックで音が出る
 npm run check                  # xrift check world
 ```
-操作方法は `sample-world/README.md` を参照（ドア、音量、ビーコン、フィルターパッド 6 個、スペクトラムとビートランプ）。
+操作方法は `sample-world/README.md` を参照（ハブ + 4 部屋: 3D 定位 / 遮蔽 / フィルター 8 種 / 解析。ハブに音量スタンド）。
 
 ## 受け入れ基準（プロトタイプで計測済みの値）
 - ジェスチャー前は AudioContext 0 個。クリック後に 1 個で running になる。listener の位置と向きがカメラ（ワールド姿勢。親が回転していても正しい）に一致する。

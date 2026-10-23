@@ -1,32 +1,85 @@
-/** room: x ∈ [-ROOM.half, ROOM.half], z ∈ [-ROOM.half, ROOM.half]; corridor behind the back wall (z > ROOM.half) */
-export const ROOM = { half: 7, height: 4, wall: 0.3 } as const
-export const DOOR = { width: 2, height: 2.4 } as const
-export const CORRIDOR = { halfWidth: 3, length: 6 } as const
+/**
+ * Layout (metres, y up). A hub in the middle; one room per topic, each behind a short corridor:
+ *
+ *                 A  3D positional audio / panning   (north, z < 0)
+ *                 |
+ *   C filters ── HUB ── B occlusion (partition wall + pocket door)
+ *                 |
+ *                 D  club PA + analyser / visualizer (south)
+ *
+ * Every rectangle is given by its wall *centre lines*; walls are WALL.t thick, so the walkable interior is
+ * the rectangle shrunk by WALL.t / 2. Openings are 2 m wide, 2.4 m high, centred on the wall.
+ */
+export const WALL = { t: 0.3, height: 3.6 } as const
+export const DOORWAY = { width: 2, height: 2.4 } as const
+/** corridor wall centre lines at ±CORRIDOR_HALF (inner width 2.2 m) */
+export const CORRIDOR_HALF = 1.25
 
-/** PA stacks on the front wall (acoustic centre at ear height) */
-export const PA_POSITIONS: [number, number, number][] = [
-  [-3.5, 0, -6.2],
-  [3.5, 0, -6.2],
+export type Rect = { x0: number; x1: number; z0: number; z1: number }
+export type RoomId = 'positional' | 'occlusion' | 'filters' | 'analyser'
+export type Side = 'n' | 's' | 'e' | 'w'
+
+export const HUB: Rect = { x0: -5, x1: 5, z0: -5, z1: 5 }
+
+export interface RoomDef {
+  id: RoomId
+  rect: Rect
+  /** the wall facing the hub (doorway side) */
+  door: Side
+  /** corridor between the hub wall and the room wall */
+  corridor: Rect
+  colors: { wall: string; floor: string; ceiling: string; corridor: string; accent: string; light: string }
+}
+
+export const ROOMS: RoomDef[] = [
+  {
+    id: 'positional',
+    rect: { x0: -7, x1: 7, z0: -23, z1: -9 },
+    door: 's',
+    corridor: { x0: -CORRIDOR_HALF, x1: CORRIDOR_HALF, z0: -9, z1: -5 },
+    colors: { wall: '#6d7f96', floor: '#1f2a37', ceiling: '#2a3340', corridor: '#4a5868', accent: '#4fc3f7', light: '#e3f2fd' },
+  },
+  {
+    id: 'occlusion',
+    rect: { x0: 9, x1: 25, z0: -6, z1: 6 },
+    door: 'w',
+    corridor: { x0: 5, x1: 9, z0: -CORRIDOR_HALF, z1: CORRIDOR_HALF },
+    colors: { wall: '#a8774c', floor: '#3a2a1e', ceiling: '#3b2e24', corridor: '#6a5240', accent: '#ffa726', light: '#fff3e0' },
+  },
+  {
+    id: 'filters',
+    rect: { x0: -23, x1: -9, z0: -7, z1: 7 },
+    door: 'e',
+    corridor: { x0: -9, x1: -5, z0: -CORRIDOR_HALF, z1: CORRIDOR_HALF },
+    colors: { wall: '#6e5a8c', floor: '#221a2e', ceiling: '#2c2438', corridor: '#54466a', accent: '#ba68c8', light: '#f3e5f5' },
+  },
+  {
+    id: 'analyser',
+    rect: { x0: -7, x1: 7, z0: 9, z1: 23 },
+    door: 'n',
+    corridor: { x0: -CORRIDOR_HALF, x1: CORRIDOR_HALF, z0: 5, z1: 9 },
+    colors: { wall: '#383b42', floor: '#0f1013', ceiling: '#16171b', corridor: '#3a3d44', accent: '#26c6da', light: '#e0f7fa' },
+  },
 ]
-export const PA_ACOUSTIC_CENTRE: [number, number, number] = [0, 1.35, 0]
+export const ROOM_BY_ID = Object.fromEntries(ROOMS.map((r) => [r.id, r])) as Record<RoomId, RoomDef>
 
-/** small point source (sine) in the back-right corner */
-export const BEACON_POSITION: [number, number, number] = [5.8, 1.2, 5.2]
+export const HUB_COLORS = { wall: '#8c8a84', floor: '#34373c', ceiling: '#2b2c2f', light: '#fafafa' } as const
 
-/** spectrum bars on the front wall, between the PA stacks */
-export const VISUALIZER_POSITION: [number, number, number] = [0, 0.4, -6.75]
+/** room B: partition wall (thick "soundproof" wall) with a pocket door in the middle */
+export const PARTITION = { x: 17, t: 0.6 } as const
+/** the occluded speaker, on the far side of the partition, off the door axis */
+export const OCCLUDED_SPEAKER: [number, number, number] = [22.2, 0, 2.6]
 
-export const SPAWN: { position: [number, number, number]; yaw: number } = { position: [0, 0, 3], yaw: 0 }
+export const SPAWN: { position: [number, number, number]; yaw: number } = { position: [0, 0, 2.4], yaw: 0 }
 
 export const COLORS = {
-  floor: '#3a3f47',
-  wall: '#c9c4b8',
-  corridor: '#8d8578',
   cabinet: '#1d1d1f',
   cone: '#55595f',
-  door: '#7a4b2a',
-  beacon: '#4fc3f7',
   ok: '#43a047',
   off: '#e53935',
   bar: '#ffb300',
+  door: '#7a4b2a',
 } as const
+
+export const rectCentre = (r: Rect): [number, number] => [(r.x0 + r.x1) / 2, (r.z0 + r.z1) / 2]
+export const inRect = (r: Rect, x: number, z: number, pad = 0) => x >= r.x0 - pad && x <= r.x1 + pad && z >= r.z0 - pad && z <= r.z1 + pad

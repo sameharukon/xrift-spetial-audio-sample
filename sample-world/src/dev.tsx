@@ -9,6 +9,7 @@ import { DevEnvironment, XRiftProvider } from '@xrift/world-components'
 import type { CameraConfig, PhysicsConfig } from '@xrift/world-components'
 import { createRoot } from 'react-dom/client'
 import { World } from './World'
+import { DevCamOverride } from './devCam'
 import xriftConfig from '../xrift.json'
 
 const rootElement = document.getElementById('root')
@@ -28,6 +29,7 @@ createRoot(rootElement).render(
       outputBufferType={worldConfig.outputBufferType}
     >
       <World />
+      <DevCamOverride />
     </DevEnvironment>
   </XRiftProvider>,
 )
