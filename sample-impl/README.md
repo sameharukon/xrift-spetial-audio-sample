@@ -9,20 +9,18 @@
 ## 日本語
 
 ### これは何？
-XRift（React Three Fiber）ワールド向けの「部屋を満たす」クラブ系 PA / 空間オーディオ層です。
+XRift（React Three Fiber）ワールド向けの 3D 音源（空間オーディオ）層です。オブジェクトに付けた音源を、聞き手（カメラ / XR の頭）の位置と向きに合わせて定位させ、壁やドア越しの遮蔽を表現します。
 デモや動作確認用に、シンプルな合成テスト音源（ピンクノイズ / サイン波 / キックとハットのループ）を同梱しています。
 
 - **core**（`xrift-spatial-audio`）: Web Audio API だけに依存（React / three.js 不要）
-  - `createClubPA()` … クロスオーバー（LR4）で低域はモノラル・無指向、中高域はステレオベッド＋スタック毎の等パワーパンナー、手続き生成の部屋 IR リバーブ、グルーリミッター
-  - `createSpeakerPanner()` / `setPannerPosition()` / `setListenerPose()` … 等パワーパンナーと、平滑化付きの位置・向き更新
-  - `createMuffle()` … 0..1 の量で駆動するローパス＋ゲイン（扉越し・遮蔽）
-  - `volumeValue()` / `volumeStages()` / `applyVolumeStages()` … 0–100 % は 3 乗カーブ、100–200 % はリミッター手前でブースト
-  - `createSoftCeiling()` … −1 dBFS まで透過、−0.1 dBFS へソフトニー（デジタルクリップ防止）
+  - `createSpeakerPanner()` / `setPannerPosition()` / `setListenerPose()` … パンナー（既定 equal-power、点音源なら HRTF も可）と、平滑化付きの位置・向き更新
+  - `createMuffle()` … 0..1 の量で駆動するローパス＋ゲイン（壁・ドア越しの遮蔽）
   - `createAudioUnlocker()` / `attachGestureUnlock()` … AudioContext の遅延生成と、ユーザー操作（pointer / key / touch / click / pointer lock / WebXR `sessionstart`）での resume
+  - `volumeValue()` / `volumeStages()` / `applyVolumeStages()` / `createSoftCeiling()` … 出力段の補助（0–200 % の音量カーブ、クリップ防止）
   - `createTestSource(ctx, { type: 'pinkNoise' | 'sine' | 'drumLoop' })` … テスト音源（ピーク −1 dBFS、ループ再生）
 - **r3f**（`xrift-spatial-audio/r3f`）: React Three Fiber バインディング
-  - `<SpatialAudioProvider>` / `useSpatialAudio()`、`<SpatialAudioListener smoothing>`、`<Speaker position node offset>`、`useClubPA()`、`updateListenerFromCamera()` / `updatePannerFromObject()`
-- **examples/TwoSpeakers.tsx** … 2 台のスピーカーでドラムループを鳴らす最小デモ
+  - `<SpatialAudioProvider>` / `useSpatialAudio()`、`<SpatialAudioListener smoothing>`（カメラのワールド姿勢に追従）、`<Speaker position rotation offset panner onPanner destination>`（グループのワールド位置でパンナーを毎フレーム更新）、`updateListenerFromCamera()` / `updatePannerFromObject()`
+- **examples/PointSource.tsx** … 点音源 1 つ（遮蔽の ON/OFF 付き）の最小デモ
 
 ### インストール
 ```bash
@@ -39,92 +37,35 @@ XRift ではホスト（xrift.net）が共有していないパッケージは�
 
 ### 最小の使い方
 ```tsx
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createTestSource } from 'xrift-spatial-audio'
-import { SpatialAudioProvider, SpatialAudioListener, Speaker, useClubPA, useSpatialAudio } from 'xrift-spatial-audio/r3f'
+import { SpatialAudioProvider, SpatialAudioListener, Speaker, useSpatialAudio } from 'xrift-spatial-audio/r3f'
 
-const SIDES = [{ side: 'L' as const }, { side: 'R' as const }]
-
-function PA() {
-  const ctx = useSpatialAudio()?.context ?? null
-  const pa = useClubPA(SIDES)            // ユーザー操作までは null
+function Source() {
+  const ctx = useSpatialAudio()?.context ?? null      // ユーザー操作までは null
+  const [panner, setPanner] = useState<PannerNode | null>(null)
   useEffect(() => {
-    if (!ctx || !pa) return
+    if (!ctx || !panner) return
     const src = createTestSource(ctx, { type: 'drumLoop', bpm: 124 })
-    src.output.connect(pa.input)          // 自分の音源もここ（pa.input）に繋ぐ
+    src.output.connect(panner)                         // 自分の音源もパンナーに繋ぐ
     src.start()
     return () => src.stop()
-  }, [ctx, pa])
-  return (
-    <>
-      <Speaker position={[-2.4, 0, 0]} offset={[0, 1.35, 0]} node={pa?.panners[0]} />
-      <Speaker position={[2.4, 0, 0]} offset={[0, 1.35, 0]} node={pa?.panners[1]} />
-    </>
-  )
+  }, [ctx, panner])
+  return <Speaker position={[0, 0, -3]} offset={[0, 1.2, 0]} panner={{ panningModel: 'HRTF' }} onPanner={setPanner} />
 }
 
 export const World = () => (
   <SpatialAudioProvider>
     <SpatialAudioListener smoothing={0.03} />
-    <PA />
+    <Source />
   </SpatialAudioProvider>
 )
 ```
-core のみ（任意のフレームワーク）:
-```ts
-import { createAudioUnlocker, createClubPA, createTestSource } from 'xrift-spatial-audio'
-const audio = createAudioUnlocker({
-  onCreate: (ctx) => {
-    const pa = createClubPA(ctx, [{ side: 'L' }, { side: 'R' }])
-    const src = createTestSource(ctx, { type: 'pinkNoise' })
-    src.output.connect(pa.input)
-    src.start()
-  },
-})
-window.addEventListener('pointerdown', () => audio.unlock(), { once: true })
-```
+遮蔽: 音源 → `createMuffle(ctx)` → パンナー の順に繋ぎ、`muffle.set(0..1)` で壁・ドアの量を渡します（examples/PointSource.tsx）。
 
-### なぜ HRTF ではなく等パワー（equal-power）か
-- Web Audio のパンナーは伝搬遅延を付けないので、同じ信号を複数の等パワーパンナーに送っても**ゲインが足されるだけ**でコムフィルタ（位相干渉）が起きません。HRTF は音源ごとに ITD / フィルタを掛けるため、複数スピーカーを合算すると音色が濁ります。
-- HRTF は一般にパンナー 1 個あたりの処理負荷が大きく、スタンドアロン VR（Meta Quest）では複数スタックを鳴らすと負担になります。
-- クラブ PA は「点音源」ではなく「部屋全体」なので、低域はモノラル・無指向、中高域のみ緩やかな距離減衰で定位させる方が実際の体験に近く、部屋のどこでもレベルが揃います（実測: 10 m × 11 m の部屋の 9 地点で RMS の差 0.6 dB）。
-- 単一の点音源には `createSpeakerPanner(ctx, { panningModel: 'HRTF' })` も選べます。
-
-### フィルター（Unity の Audio Filter 相当）
-
-`core` の各ファクトリは `{ input, output, params, set(params, t?), dispose() }` を返します。`set` は短い時定数でなめらかに変化します（クリックなし）。
-
-| Unity | 本ライブラリ | 主なパラメータ（既定値） |
-|---|---|---|
-| AudioLowPassFilter | `createLowPass` / `{type:'lowpass'}` | `cutoff` 5000 Hz, `resonance` 0.707（線形 Q） |
-| AudioHighPassFilter | `createHighPass` / `{type:'highpass'}` | `cutoff` 500 Hz, `resonance` 0.707 |
-| AudioReverbFilter / Reverb Zone | `createReverb` / `{type:'reverb'}` | `preset` small / room / basement / hall, `rt60`, `preDelay`, `damping`, `dry` 0.85, `wet` 0.35 |
-| AudioEchoFilter | `createEcho` / `{type:'echo'}` | `delay` 0.5 s, `feedback` 0.4（≤0.95）, `damping`, `dry` 1, `wet` 0.3 |
-| AudioDistortionFilter | `createDistortion` / `{type:'distortion'}` | `amount` 0.5（0–1, 自動メイクアップ） |
-| AudioChorusFilter | `createChorus` / `{type:'chorus'}` | `rate` 0.8 Hz, `depth` 2.5 ms, `delay` 20 ms, `dry` 0.6, `wet` 0.4 |
-
-- リバーブ IR は合成（外部ファイル不要）。AudioContext × プリセット × RT60 ごとにキャッシュ共有。
-- チェーン: `createFilterChain(ctx, specs)` → `{ input, output, update(specs), dispose }`。`enabled:false` は約 15 ms のクロスフェードでバイパス。種類の並びが変わった時だけ作り直し。
-- R3F: `<Speaker filters={[{ type: 'lowpass', cutoff: 800 }, { type: 'reverb', preset: 'hall' }]} onInput={setInput}>`（音源は `onInput` で受け取るノードへ接続）、または `useAudioFilters(specs)`。
-- 既定値は −1 dBFS のドラムループを入れても 0 dBFS を超えないよう調整済み。
-
-### 解析（ビジュアライザー用, Unity の GetSpectrumData / GetOutputData 相当）
-
-```ts
-const an = createAnalyser(ctx, { fftSize: 2048, bands: 16 })   // bands: 本数 or FOUR_BANDS など
-const untap = an.tap(someNode)       // 任意のノードに分岐接続（音には影響しない）
-// 毎フレーム
-an.update()
-an.spectrum   // Float32Array dB   ≒ GetSpectrumData
-an.waveform   // Float32Array -1..1 ≒ GetOutputData
-an.bands      // 0..1 の対数帯域（attack / release 付き）
-an.rms; an.peak; an.beat; an.beatPulse; an.bpm
-an.dominantFrequency(); an.pitch()   // 最大ビン + 放物線補間 / 自己相関（pitch は重いので必要時のみ）
-```
-
-- フレームごとのメモリ確保なし。`update()` は fft 2048・16 帯域で約 20 µs。
-- R3F: `const an = useAudioAnalyser(node, opts)`（ref を返す。再レンダーなし）。`driveInstancedBars(instancedMesh, an.current.bands)` で棒グラフ。
-- ビート検出は低域（30–150 Hz）のスペクトルフラックス。連続検出は `onsetMinInterval`（既定 0.25 s）で制限 → 点滅は 4 Hz 以下。
+### equal-power と HRTF
+- 既定は equal-power。Web Audio のパンナーは伝搬遅延を付けないので、同じ信号を複数のパンナーに送っても**ゲインが足されるだけ**でコムフィルタ（位相干渉）が起きません。HRTF は音源ごとに ITD / フィルタを掛けるため、同じ信号を複数スピーカーで鳴らすと音色が濁り、パンナー 1 個あたりの負荷も大きい（Meta Quest など）。
+- 独立した点音源には `panner={{ panningModel: 'HRTF' }}`（または `createSpeakerPanner(ctx, { panningModel: 'HRTF' })`）で HRTF を選べます。前後・上下の手掛かりが増えます。
 
 ### ライセンス
 CC0 1.0 Universal（パブリックドメイン）。著作権を放棄しています。クレジット表記も不要で、自由に使用・改変・再配布できます。全文は LICENSE を参照してください。
@@ -134,20 +75,20 @@ CC0 1.0 Universal（パブリックドメイン）。著作権を放棄してい
 ## English
 
 ### What is it?
-A "fill the room" club PA / spatial-audio layer for XRift (React Three Fiber) worlds. For demos and level checks it
-ships a simple synthesized test source (pink noise, sine, or a kick + hat loop).
+A 3D (spatial) audio layer for XRift (React Three Fiber) worlds: sources attached to objects are positioned relative to
+the listener (camera / XR head), and can be occluded by walls and doors. For demos and level checks it ships a simple
+synthesized test source (pink noise, sine, or a kick + hat loop).
 
 - **core** (`xrift-spatial-audio`) — Web Audio only, no React / three.js:
-  `createClubPA()` (LR4 crossover → mono non-directional lows; stereo bed + per-stack equal-power panners for mids/highs;
-  procedural room-IR reverb; glue limiter), `createSpeakerPanner()`, `setPannerPosition()`, `setListenerPose()` (smoothed),
-  `createMuffle()` (0..1 low-pass + gain for doors / occlusion), `volumeValue()` / `volumeStages()` / `applyVolumeStages()`
-  (cubic 0–100 %, boost into the limiter up to 200 %), `createSoftCeiling()` (transparent to −1 dBFS, soft knee to −0.1 dBFS),
-  `createAudioUnlocker()` / `attachGestureUnlock()` (lazy AudioContext, resume on pointer / key / touch / click /
-  pointer-lock / WebXR `sessionstart`), `createTestSource(ctx, { type: 'pinkNoise' | 'sine' | 'drumLoop' })`
-  (looping test programme peaking at −1 dBFS).
-- **r3f** (`xrift-spatial-audio/r3f`) — `<SpatialAudioProvider>` / `useSpatialAudio()`, `<SpatialAudioListener smoothing>`,
-  `<Speaker position node offset>`, `useClubPA()`, `updateListenerFromCamera()` / `updatePannerFromObject()`.
-- **examples/TwoSpeakers.tsx** — minimal demo: two speakers playing the drum loop.
+  `createSpeakerPanner()` (equal-power by default, HRTF for point sources), `setPannerPosition()`, `setListenerPose()` (smoothed),
+  `createMuffle()` (0..1 low-pass + gain for walls / doors), `createAudioUnlocker()` / `attachGestureUnlock()` (lazy
+  AudioContext, resume on pointer / key / touch / click / pointer-lock / WebXR `sessionstart`), output helpers
+  `volumeValue()` / `volumeStages()` / `applyVolumeStages()` / `createSoftCeiling()` (0–200 % volume curve, no clipping),
+  `createTestSource(ctx, { type: 'pinkNoise' | 'sine' | 'drumLoop' })` (looping test programme peaking at −1 dBFS).
+- **r3f** (`xrift-spatial-audio/r3f`) — `<SpatialAudioProvider>` / `useSpatialAudio()`, `<SpatialAudioListener smoothing>`
+  (follows the camera's world pose), `<Speaker position rotation offset panner onPanner destination>` (drives a panner from
+  the group's world position every frame), `updateListenerFromCamera()` / `updatePannerFromObject()`.
+- **examples/PointSource.tsx** — minimal demo: one point source with switchable occlusion.
 
 ### Install
 ```bash
@@ -166,26 +107,15 @@ network and ships unminified. `three`, `@react-three/fiber` and `react` are exte
 shared singletons (provided by the host) are used.
 
 ### Minimal usage
-See the TSX example above (`SpatialAudioProvider` + `SpatialAudioListener` + `Speaker` + `useClubPA` +
-`createTestSource`); connect your own programme to `pa.input` the same way.
+See the TSX example above (`SpatialAudioProvider` + `SpatialAudioListener` + `Speaker onPanner` + `createTestSource`);
+connect your own source to the panner the same way. For occlusion, insert `createMuffle(ctx)` between the source and the
+panner and drive `muffle.set(0..1)` (see examples/PointSource.tsx).
 
-### Why equal-power instead of HRTF
-- Web Audio panners add no propagation delay, so feeding one signal to several equal-power panners only sums gains —
-  no comb filtering. HRTF applies per-source ITD / filtering, which colours the sum of several speakers.
-- HRTF panners are generally much more expensive; on standalone headsets (Meta Quest) several stacks add up.
-- A club PA is "the room", not a point: mono lows and gently distance-attenuated mids/highs keep the level even
-  everywhere (measured: 0.6 dB RMS spread over 9 positions in a 10 m × 11 m room).
-- For a single point source you can still pass `{ panningModel: 'HRTF' }` to `createSpeakerPanner()`.
-
-### Filters (Unity Audio Filter equivalents)
-
-Each core factory returns `{ input, output, params, set(params, t?), dispose() }`; `set` glides (no clicks).
-Low-pass / high-pass (`cutoff`, `resonance`), reverb (`preset` small/room/basement/hall, `rt60`, `preDelay`, `damping`, `dry`, `wet`; synthetic IR cached per context+preset), echo (`delay`, `feedback`, `damping`, `dry`, `wet`), distortion (`amount`), chorus (`rate`, `depth`, `delay`, `dry`, `wet`).
-Chain with `createFilterChain(ctx, specs)` / `useAudioFilters(specs)` / `<Speaker filters={...} onInput={...}>`. `enabled: false` cross-fades to bypass.
-
-### Analysis (visualisers; Unity `GetSpectrumData` / `GetOutputData`)
-
-`createAnalyser(ctx, opts)` → `tap(node)`, `update()`, `spectrum` (dB), `waveform`, `bands` (0..1 log bands with attack/release), `rms`, `peak`, `beat`, `beatPulse`, `bpm`, `dominantFrequency()`, `pitch()`. Allocation-free; ~20 µs per `update()`. R3F: `useAudioAnalyser(node, opts)` (ref, no re-renders) + `driveInstancedBars(mesh, bands)`.
+### Equal-power vs HRTF
+- Equal-power is the default. Web Audio panners add no propagation delay, so feeding one signal to several equal-power
+  panners only sums gains — no comb filtering. HRTF applies per-source ITD / filtering, which colours the sum when the same
+  signal plays from several speakers, and costs more CPU (noticeable on Quest).
+- For independent point sources pass `{ panningModel: 'HRTF' }` for better front/back and elevation cues.
 
 ### License
 CC0 1.0 Universal (public domain dedication). No rights reserved, no attribution required. See LICENSE for the full text.

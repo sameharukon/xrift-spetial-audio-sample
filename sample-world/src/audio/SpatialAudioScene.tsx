@@ -3,8 +3,6 @@ import { useEffect } from 'react'
 import { Vector3 } from 'three'
 import { SpatialAudioListener, useSpatialAudio } from 'xrift-spatial-audio/r3f'
 import { ROOMS } from '../constants'
-import { AnalyserRoom } from '../rooms/AnalyserRoom'
-import { FiltersRoom } from '../rooms/FiltersRoom'
 import { OcclusionRoom } from '../rooms/OcclusionRoom'
 import { PositionalRoom } from '../rooms/PositionalRoom'
 import { applyVolume, useOutputChain } from './chain'
@@ -14,7 +12,7 @@ const _p = new Vector3()
 
 /**
  * The whole audio side: one output chain (per-room buses → boost → limiter → volume → soft ceiling) and the
- * four rooms. Visuals render before the first gesture; sources start once the AudioContext exists.
+ * two rooms. Visuals render before the first gesture; sources start once the AudioContext exists.
  */
 export function SpatialAudioScene({ volumePct }: { volumePct: number }) {
   const ctx = useSpatialAudio()?.context ?? null
@@ -39,8 +37,6 @@ export function SpatialAudioScene({ volumePct }: { volumePct: number }) {
       <SpatialAudioListener smoothing={0.03} />
       <PositionalRoom bus={bus('positional')} />
       <OcclusionRoom bus={bus('occlusion')} />
-      <FiltersRoom bus={bus('filters')} />
-      <AnalyserRoom bus={bus('analyser')} />
     </>
   )
 }

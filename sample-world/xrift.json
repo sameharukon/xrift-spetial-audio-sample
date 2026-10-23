@@ -2,7 +2,7 @@
   "world": {
     "distDir": "./dist",
     "title": "Spatial Audio Sample",
-    "description": "空間オーディオ・フィルター・解析ライブラリ（xrift-spatial-audio）のサンプルワールド。ハブから 4 部屋に分かれています: 3D 定位 / 壁とドア越しの遮蔽 / フィルター 8 種（LPF/HPF/リバーブ/エコー等）/ 解析（PA・スペクトラム・ピッチ）。画面をクリックすると音が出ます。※ビートに合わせて控えめな点滅があります。",
+    "description": "3D 音源ライブラリ（xrift-spatial-audio）のサンプルワールド。ハブから 2 部屋に分かれています: 3D 定位（周回する音源、HRTF / equal-power 切替）/ 壁とドア越しの遮蔽。画面をクリックすると音が出ます。",
     "thumbnailPath": "thumbnail.png",
     "buildCommand": "npm run build",
     "ignore": [

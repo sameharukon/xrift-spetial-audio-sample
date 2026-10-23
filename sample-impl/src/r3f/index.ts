@@ -1,7 +1,4 @@
 export * from './SpatialAudioProvider'
 export * from './SpatialAudioListener'
 export * from './Speaker'
-export * from './useClubPA'
 export * from './three'
-export * from './useAudioFilters'
-export * from './useAudioAnalyser'

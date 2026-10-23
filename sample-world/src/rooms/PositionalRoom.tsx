@@ -44,7 +44,7 @@ export function PositionalRoom({ bus }: { bus: RoomBus | null }) {
   return (
     <group>
       {/* centre: drum loop */}
-      <Speaker position={[CX, 0, CZ]} offset={[0, 1.25, 0]} destination={dest} panner={{ refDistance: 1.5, rolloffFactor: 1.1, maxDistance: 20, panningModel: model }} onInput={setDrumIn}>
+      <Speaker position={[CX, 0, CZ]} offset={[0, 1.25, 0]} destination={dest} panner={{ refDistance: 1.5, rolloffFactor: 1.1, maxDistance: 20, panningModel: model }} onPanner={setDrumIn}>
         <OmniSpeaker color="#ffffff" lit={drum} />
       </Speaker>
       {/* orbit path marker on the floor (2 cm up) */}
@@ -54,7 +54,7 @@ export function PositionalRoom({ bus }: { bus: RoomBus | null }) {
       </mesh>
       {/* orbiting sine */}
       <group ref={arm} position={[CX, 0, CZ]}>
-        <Speaker position={[ORBIT_R, 1.6, 0]} destination={dest} panner={{ refDistance: 1, rolloffFactor: 1.3, maxDistance: 20, panningModel: model }} onInput={setOrbitIn}>
+        <Speaker position={[ORBIT_R, 1.6, 0]} destination={dest} panner={{ refDistance: 1, rolloffFactor: 1.3, maxDistance: 20, panningModel: model }} onPanner={setOrbitIn}>
           <mesh>
             <sphereGeometry args={[0.2, 24, 16]} />
             <meshStandardMaterial ref={orbMat} color={room.colors.accent} emissive={room.colors.accent} emissiveIntensity={1.4} />
@@ -62,7 +62,7 @@ export function PositionalRoom({ bus }: { bus: RoomBus | null }) {
         </Speaker>
       </group>
       {/* corner: pink noise, facing the centre */}
-      <Speaker position={[room.rect.x0 + 1.3, 0, room.rect.z0 + 1.3]} rotation={[0, Math.PI / 4, 0]} offset={[0, 1.25, 0]} destination={dest} panner={{ refDistance: 1.2, rolloffFactor: 1.2, maxDistance: 20, panningModel: model }} onInput={setNoiseIn}>
+      <Speaker position={[room.rect.x0 + 1.3, 0, room.rect.z0 + 1.3]} rotation={[0, Math.PI / 4, 0]} offset={[0, 1.25, 0]} destination={dest} panner={{ refDistance: 1.2, rolloffFactor: 1.2, maxDistance: 20, panningModel: model }} onPanner={setNoiseIn}>
         <MiniSpeaker color="#f48fb1" lit={noise} />
       </Speaker>
       <ButtonStand

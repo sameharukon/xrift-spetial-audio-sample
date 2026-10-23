@@ -14,11 +14,9 @@ export interface WorldProps {
 }
 
 /**
- * Spatial audio sample: a hub (volume + audio-state lamp) with one room per topic (see constants.ts):
+ * Spatial audio sample: a hub (volume + audio-state lamp; its west and south walls are closed) with one room per topic (see constants.ts):
  *   north  A  3D positional audio / panning (point sources, a moving source, equal-power ↔ HRTF)
  *   east   B  occlusion (`createMuffle`): a speaker behind a partition with a pocket door
- *   west   C  filters: 8 speakers — dry, LPF, HPF, reverb small / hall, echo, distortion, chorus
- *   south  D  club PA (`useClubPA`) + analyser: spectrum, beat lamp, four bands, pitch meter
  * Each room has its own bus, gated / muffled by where the listener is, so rooms do not bleed into each other.
  * Audio starts on the first click / key / touch / pointer lock / XR session start; it is local to each visitor.
  */

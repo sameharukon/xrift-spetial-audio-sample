@@ -57,7 +57,7 @@ export function OcclusionRoom({ bus }: { bus: RoomBus | null }) {
   return (
     <group>
       <PocketDoor open={doorOpen} onToggle={() => setDoorOpen((o) => !o)} />
-      <Speaker position={OCCLUDED_SPEAKER} rotation={[0, -Math.PI / 2 - 0.35, 0]} offset={[0, 1.35, 0]} destination={muffle?.input} panner={{ refDistance: 2.5, rolloffFactor: 0.9, maxDistance: 25 }} onInput={setInput}>
+      <Speaker position={OCCLUDED_SPEAKER} rotation={[0, -Math.PI / 2 - 0.35, 0]} offset={[0, 1.35, 0]} destination={muffle?.input} panner={{ refDistance: 2.5, rolloffFactor: 0.9, maxDistance: 25 }} onPanner={setInput}>
         <SpeakerCabinet />
       </Speaker>
       {/* occlusion meter on the near face of the partition (back 1 cm inside the wall) */}

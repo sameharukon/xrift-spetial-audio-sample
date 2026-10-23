@@ -3,9 +3,7 @@
  *
  *                 A  3D positional audio / panning   (north, z < 0)
  *                 |
- *   C filters ── HUB ── B occlusion (partition wall + pocket door)
- *                 |
- *                 D  club PA + analyser / visualizer (south)
+ *                HUB ── B occlusion (partition wall + pocket door)
  *
  * Every rectangle is given by its wall *centre lines*; walls are WALL.t thick, so the walkable interior is
  * the rectangle shrunk by WALL.t / 2. Openings are 2 m wide, 2.4 m high, centred on the wall.
@@ -16,7 +14,7 @@ export const DOORWAY = { width: 2, height: 2.4 } as const
 export const CORRIDOR_HALF = 1.25
 
 export type Rect = { x0: number; x1: number; z0: number; z1: number }
-export type RoomId = 'positional' | 'occlusion' | 'filters' | 'analyser'
+export type RoomId = 'positional' | 'occlusion'
 export type Side = 'n' | 's' | 'e' | 'w'
 
 export const HUB: Rect = { x0: -5, x1: 5, z0: -5, z1: 5 }
@@ -45,20 +43,6 @@ export const ROOMS: RoomDef[] = [
     door: 'w',
     corridor: { x0: 5, x1: 9, z0: -CORRIDOR_HALF, z1: CORRIDOR_HALF },
     colors: { wall: '#a8774c', floor: '#3a2a1e', ceiling: '#3b2e24', corridor: '#6a5240', accent: '#ffa726', light: '#fff3e0' },
-  },
-  {
-    id: 'filters',
-    rect: { x0: -23, x1: -9, z0: -7, z1: 7 },
-    door: 'e',
-    corridor: { x0: -9, x1: -5, z0: -CORRIDOR_HALF, z1: CORRIDOR_HALF },
-    colors: { wall: '#6e5a8c', floor: '#221a2e', ceiling: '#2c2438', corridor: '#54466a', accent: '#ba68c8', light: '#f3e5f5' },
-  },
-  {
-    id: 'analyser',
-    rect: { x0: -7, x1: 7, z0: 9, z1: 23 },
-    door: 'n',
-    corridor: { x0: -CORRIDOR_HALF, x1: CORRIDOR_HALF, z0: 5, z1: 9 },
-    colors: { wall: '#383b42', floor: '#0f1013', ceiling: '#16171b', corridor: '#3a3d44', accent: '#26c6da', light: '#e0f7fa' },
   },
 ]
 export const ROOM_BY_ID = Object.fromEntries(ROOMS.map((r) => [r.id, r])) as Record<RoomId, RoomDef>

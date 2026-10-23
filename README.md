@@ -4,15 +4,13 @@
 
 ## 日本語
 
-XRift ワールド用の空間オーディオライブラリ（プロトタイプ）とサンプルワールドです。
+XRift ワールド用の 3D 音源（空間オーディオ）ライブラリ（プロトタイプ）とサンプルワールドです。
 
 - `sample-impl/` は `xrift-spatial-audio` 本体です。Web Audio の core と React Three Fiber のバインディングで、次の機能があります。
-  - 空間定位と PA
+  - 3D 定位（オブジェクトに付けた音源、聞き手の追従、equal-power / HRTF）
   - 遮蔽
   - 音量
-  - フィルター: LPF / HPF / リバーブ / エコー / ディストーション / コーラス
-  - 解析: スペクトラム / 帯域 / ビート / ピッチ
-- `sample-world/` は動作確認用の XRift ワールドです。画面をクリックすると音が出ます。ビートに合わせて控えめな点滅があります。
+- `sample-world/` は動作確認用の XRift ワールドです。画面をクリックすると音が出ます。
 - `AI_BRIEF.md` は正式実装を担当する AI 向けの説明です。
 
 ```bash
@@ -23,15 +21,13 @@ npm run check                  # xrift check world
 
 ## English
 
-This repo holds a prototype spatial-audio library for XRift worlds, plus a sample world.
+This repo holds a prototype 3D (spatial) audio library for XRift worlds, plus a sample world.
 
 - `sample-impl/` is the `xrift-spatial-audio` library: a Web Audio core and React Three Fiber bindings. It provides:
-  - spatialisation and a club PA
+  - 3D positioning (sources attached to objects, listener tracking, equal-power / HRTF)
   - occlusion
   - volume
-  - filters: LPF / HPF / reverb / echo / distortion / chorus
-  - analysis: spectrum / bands / beat / pitch
-- `sample-world/` is a minimal XRift world for trying the library. Click to start the audio. It has mild flashing on the beat.
+- `sample-world/` is a minimal XRift world for trying the library. Click to start the audio.
 - `AI_BRIEF.md` is a short brief (in Japanese) for whoever implements the official version.
 
 Run `npm install && npm run build` at the root, then `npm run dev`.

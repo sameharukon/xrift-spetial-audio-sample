@@ -1,7 +1,7 @@
 {
   "name": "xrift-spatial-audio",
   "version": "0.1.0",
-  "description": "Club-style spatial audio / PA layer for XRift worlds (Web Audio core + React Three Fiber bindings)",
+  "description": "3D spatial audio for XRift worlds: positioned sources, listener tracking and occlusion (Web Audio core + React Three Fiber bindings)",
   "type": "module",
   "license": "CC0-1.0",
   "sideEffects": false,

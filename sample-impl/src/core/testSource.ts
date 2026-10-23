@@ -6,7 +6,7 @@
  *   drumLoop   one bar of four-on-the-floor: a pitched-down sine kick on every beat, an open hat on the
  *              off-beats and quiet closed hats on the 16ths (hats panned slightly apart)
  *
- * Buffers are peak-normalised to −1 dBFS (×0.89) before `gain`, i.e. the level the PA is tuned for.
+ * Buffers are peak-normalised to −1 dBFS (×0.89) before `gain`, leaving headroom for the output stage.
  */
 export type TestSourceType = 'pinkNoise' | 'sine' | 'drumLoop'
 
@@ -23,7 +23,7 @@ export interface TestSourceOptions {
 }
 
 export interface TestSource {
-  /** stereo output: connect it to `clubPA.input`, a panner, … */
+  /** stereo output: connect it to a muffle, a panner, … */
   output: GainNode
   /** start (or restart) playback at audio time `when` (loops until stopped) */
   start(when?: number): void
